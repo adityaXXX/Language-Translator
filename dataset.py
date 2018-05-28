@@ -1,4 +1,5 @@
 import pickle
+from unidecode import unidecode
 
 
 def loadFile(filename):
@@ -39,8 +40,15 @@ def clean(text):
     return k
 
 
+for i in range(len(french)):
+    sequence = french[i]
+    sequence = unidecode(sequence)
+    french[i] = sequence
+
+
 english = clean(english)
 french = clean(french)
+
 
 pickle.dump(english, open('english.pkl', 'wb'))
 pickle.dump(french, open('french.pkl', 'wb'))
