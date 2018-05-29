@@ -1,5 +1,6 @@
 import pickle
 from unidecode import unidecode
+import numpy as np
 
 
 def loadFile(filename):
@@ -19,7 +20,7 @@ def loadText(Text):
         # print(lang)
         eng.append(lang[0])
         fr.append(lang[1])
-    return eng, fr
+    return np.array(eng), np.array(fr)
 
 
 text = loadFile('dataset1/fra.txt')
@@ -37,7 +38,7 @@ def clean(text):
             else:
                 continue
         k.append("".join(m))
-    return k
+    return np.array(k)
 
 
 for i in range(len(french)):
