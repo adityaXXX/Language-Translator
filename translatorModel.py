@@ -8,6 +8,7 @@ from keras.layers import Dense
 from keras.layers import RepeatVector
 from keras.layers import TimeDistributed
 from keras.layers import Activation
+from keras.callbacks import ModelCheckpoint
 
 
 from pickle import load
@@ -30,32 +31,43 @@ def loadLanguageFile(filename):
 
 
 def encodeSequences(trainingData, tokenizer, maxlength):
-    X = []
-    for sequence in trainingData:
-        encoder = tokenizer.texts_to_sequences([sequence])
-        Seq = pad_sequences([encoder], maxlen=maxlength, padding='pre')
-        X.append(Seq)
-    return X
+    encoder = tokenizer.texts_to_sequences(trainingData)
+    encoder = pad_sequences(encoder, maxlen=maxlength, padding='pre')
+    return encoder
 
 
 def encodeOutput(testData, vocabSize):
-    y = []
-    for sequence in testData:
-        Seq = to_categorical(sequence, num_classes=vocabSize)
-        y.append(Seq)
-    y = np.array(y)
+    y = to_categorical(testData, num_classes = vocabSize)
     return y
+
+
+def createModel(engVocab, frVocab, size, englishMaxlength, frenchMaxLength):
+    model = Sequential()
+    model.add(Embedding(input_dim = engVocab, output_dim = size, input_length = englishMaxlength, mask_zero = True))
+    model.add(LSTM(units = size))
+    model.add(RepeatVector(frenchMaxLength))
+    model.add(LSTM(units = size, return_sequences = True))
+    model.add(TimeDistributed(Dense(frenchVocabsize, activation = 'softmax')))
+    return model
+
+
+def DataGenerator(trainingDataEnglish, trainingDataFrench):
+    while True:
+        l = len(trainingDataFrench)
+        for i in range(l):
+            yield(trainingDataEnglish[i], trainingDataFrench[i])
 
 
 english = loadLanguageFile('english.pkl')
 french = loadLanguageFile('french.pkl')
 
 
-trainingSize = 120000
+samples = 6000
+trainingSize = 5000
 trainEng = english[:trainingSize]
 trainFr = french[:trainingSize]
-testEng = english[:(len(english) - trainingSize)]
-testFr = french[:(len(french) - trainingSize)]
+testEng = english[trainingSize:samples]
+testFr = french[trainingSize:samples]
 englishTokenizer = createTokenizer(trainEng)
 frenchTokenizer = createTokenizer(trainFr)
 englishVocabSize = len(englishTokenizer.word_index) + 1
@@ -66,7 +78,7 @@ frenchMaxLength = maxLength(trainFr)
 
 print("Dataset size = {}".format(len(english)))
 print("Training Size = {}".format(trainingSize))
-print("Test Size = {}".format(len(english) - trainingSize))
+print("Test Size = {}".format(samples - trainingSize))
 print("English Vocabulary Size = {}".format(englishVocabSize))
 print("French Vocabulary Size = {}".format(frenchVocabsize))
 print("Max Length of English Training Data = {}".format(englishMaxlength))
@@ -80,4 +92,19 @@ trainY = encodeOutput(trainY, frenchVocabsize)
 
 testX = encodeSequences(testEng, englishTokenizer, englishMaxlength)
 testY = encodeSequences(testFr, frenchTokenizer, frenchMaxLength)
-trainY = encodeOutput(testY, frenchVocabsize)
+testY = encodeOutput(testY, frenchVocabsize)
+
+
+epochs = 20
+
+print(testX.shape)
+# model = createModel(engVocab = englishVocabSize, frVocab = frenchVocabsize, size = 256, englishMaxlength = englishMaxlength, frenchMaxLength = frenchMaxLength)
+# model.compile(optimizer = 'adam', loss = 'categorical_crossentropy')
+# checkpoint = ModelCheckpoint('model.h5', monitor = 'val_loss', save_best_only = True, mode = 'min')
+# model.fit(trainX, trainY, epochs = epochs, callbacks = [checkpoint], validation_data = (testX, testY))
+
+
+# steps = len(trainX)
+# generator = DataGenerator(trainX, trainY)
+# model.fit_generator(generator, epochs = epochs, steps_per_epoch = steps, validation_data = (testX, testY))
+# model.save('Model.h5')
