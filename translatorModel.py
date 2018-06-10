@@ -48,6 +48,7 @@ def createModel(engVocab, frVocab, size, englishMaxlength, frenchMaxLength):
     model.add(RepeatVector(frenchMaxLength))
     model.add(LSTM(units = size, return_sequences = True))
     model.add(TimeDistributed(Dense(frenchVocabsize, activation = 'softmax')))
+    print(model.summary())
     return model
 
 
@@ -55,15 +56,19 @@ def DataGenerator(trainingDataEnglish, trainingDataFrench):
     while True:
         l = len(trainingDataFrench)
         for i in range(l):
-            yield(trainingDataEnglish[i], trainingDataFrench[i])
+            arr1 = np.array(trainingDataEnglish[i])
+            arr2 = np.array(trainingDataFrench[i])
+            arr1 = np.expand_dims(arr1, axis = 0)
+            arr2 = np.expand_dims(arr2, axis = 0)
+            yield(arr1, arr2)
 
 
 english = loadLanguageFile('english.pkl')
 french = loadLanguageFile('french.pkl')
 
 
-samples = 6000
-trainingSize = 5000
+samples = 8000
+trainingSize = 6000
 trainEng = english[:trainingSize]
 trainFr = french[:trainingSize]
 testEng = english[trainingSize:samples]
@@ -97,14 +102,18 @@ testY = encodeOutput(testY, frenchVocabsize)
 
 epochs = 20
 
-print(testX.shape)
-# model = createModel(engVocab = englishVocabSize, frVocab = frenchVocabsize, size = 256, englishMaxlength = englishMaxlength, frenchMaxLength = frenchMaxLength)
-# model.compile(optimizer = 'adam', loss = 'categorical_crossentropy')
-# checkpoint = ModelCheckpoint('model.h5', monitor = 'val_loss', save_best_only = True, mode = 'min')
-# model.fit(trainX, trainY, epochs = epochs, callbacks = [checkpoint], validation_data = (testX, testY))
+# print(trainX.shape)
+# print(trainY.shape)
+model = createModel(engVocab = englishVocabSize, frVocab = frenchVocabsize, size = 256, englishMaxlength = englishMaxlength, frenchMaxLength = frenchMaxLength)
+model.compile(optimizer = 'adam', loss = 'categorical_crossentropy')
+checkpoint = ModelCheckpoint('model.h5', monitor = 'val_loss', save_best_only = True, mode = 'min')
+model.fit(trainX, trainY, epochs = epochs, callbacks = [checkpoint], validation_data = (testX, testY))
 
 
 # steps = len(trainX)
 # generator = DataGenerator(trainX, trainY)
+# e, f = next(generator)
+# print(e)
+# print(f.shape)
 # model.fit_generator(generator, epochs = epochs, steps_per_epoch = steps, validation_data = (testX, testY))
 # model.save('Model.h5')
